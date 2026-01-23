@@ -22,7 +22,7 @@ class KDABlock(nn.Module):
         self,
         dim: int,
         num_heads: int = 16,
-        head_dim: int = 128,
+        head_dim: int = 64,
         expand_v: float = 1.0,
         num_v_heads: int = None,
         mode: str = "chunk",
@@ -38,7 +38,7 @@ class KDABlock(nn.Module):
         layer_idx: int = None,
         norm_eps: float = 1e-5,
         act_layer: Callable[..., nn.Module] = nn.GELU,
-        norm_layer: Callable[..., nn.Module] = nn.RMSNorm,
+        norm_layer: Callable[..., nn.Module] = nn.RMSNorm, # Use RMSNorm or LayerNorm (NEED EXPERIMENT)
         attn_class: Callable[..., nn.Module] = KimiDeltaAttention,
         ffn_layer: Callable[..., nn.Module] = Mlp,
         **kwargs,
@@ -48,7 +48,7 @@ class KDABlock(nn.Module):
         self.norm1 = norm_layer(dim)
 
         self.attn = attn_class(
-            dim,
+            hidden_size=dim,
             expand_v=expand_v,
             num_heads=num_heads,
             head_dim=head_dim,
@@ -101,10 +101,17 @@ class KDABlock(nn.Module):
                 use_cache=use_cache,
                 output_attentions=output_attentions,
             )
-        x = residual + x
-        x = self.norm2(x)
-        x = self.mlp(x)
-        x = residual + x
+        if self.training and self.sample_drop_ratio > 0.0:
+            x = residual + self.drop_path1(self.ls1(x))
+            residual = x
+            x = self.norm2(x)
+            x = residual + self.drop_path2(self.ls2(self.mlp(x)))
+        else:
+            x = residual + self.ls1(x)
+            residual = x
+            x = self.norm2(x)
+            x = self.ls2(self.mlp(x))
+            x = residual + x
 
         if use_cache:
             return x, past_key_values
