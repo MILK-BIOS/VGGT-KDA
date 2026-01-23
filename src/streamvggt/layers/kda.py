@@ -38,7 +38,7 @@ class KDABlock(nn.Module):
         layer_idx: int = None,
         norm_eps: float = 1e-5,
         act_layer: Callable[..., nn.Module] = nn.GELU,
-        norm_layer: Callable[..., nn.Module] = nn.RMSNorm, # Use RMSNorm or LayerNorm (NEED EXPERIMENT)
+        norm_layer: Callable[..., nn.Module] = nn.LayerNorm, # Use RMSNorm or LayerNorm (NEED EXPERIMENT)
         attn_class: Callable[..., nn.Module] = KimiDeltaAttention,
         ffn_layer: Callable[..., nn.Module] = Mlp,
         **kwargs,
