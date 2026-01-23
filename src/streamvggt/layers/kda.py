@@ -67,6 +67,7 @@ class KDABlock(nn.Module):
 
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
+        self.proj = nn.Linear(dim, dim, bias=ffn_bias)
         self.mlp = ffn_layer(
             in_features=dim,
             hidden_features=mlp_hidden_dim,
@@ -102,12 +103,12 @@ class KDABlock(nn.Module):
                 output_attentions=output_attentions,
             )
         if self.training and self.sample_drop_ratio > 0.0:
-            x = residual + self.drop_path1(self.ls1(x))
+            x = residual + self.drop_path1(self.ls1(self.proj(x)))
             residual = x
             x = self.norm2(x)
             x = residual + self.drop_path2(self.ls2(self.mlp(x)))
         else:
-            x = residual + self.ls1(x)
+            x = residual + self.ls1(self.proj(x))
             residual = x
             x = self.norm2(x)
             x = self.ls2(self.mlp(x))

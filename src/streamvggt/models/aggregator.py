@@ -101,6 +101,8 @@ class Aggregator(nn.Module):
                         dim=embed_dim,
                         num_heads=num_heads,
                         mlp_ratio=mlp_ratio,
+                        ffn_bias=ffn_bias,
+                        init_values=init_values,
                         layer_idx=layer,
                     )
                     for layer in range(depth)
