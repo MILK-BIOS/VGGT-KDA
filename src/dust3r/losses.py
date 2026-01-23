@@ -24,7 +24,15 @@ from dust3r.utils.camera import (
     relative_pose_absT_quatR,
 )
 
-
+def check_and_fix_inf_nan(x: torch.Tensor, name: str):
+    if not torch.is_floating_point(x):
+        return x
+    bad = torch.isinf(x) | torch.isnan(x)
+    if bad.any():
+        # 用 0 替换异常值，或你想要的常数
+        x = x.clone()
+        x[bad] = 0.0
+    return x
 
 def Sum(*losses_and_masks):
     loss, mask = losses_and_masks[0]

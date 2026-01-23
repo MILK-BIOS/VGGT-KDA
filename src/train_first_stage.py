@@ -134,7 +134,7 @@ def train(args):
         printer.info(f"Saving current code to {dst_dir}")
 
     # auto resume
-    if args.resume:
+    if not args.resume:
         last_ckpt_fname = os.path.join(args.output_dir, f"checkpoint-last.pth")
         args.resume = last_ckpt_fname if os.path.isfile(last_ckpt_fname) else None
 
@@ -237,7 +237,11 @@ def train(args):
 
     if hasattr(model, 'aggregator') and hasattr(model.aggregator, 'register_token'):
         model.aggregator.register_token.requires_grad = False
-
+    
+    # Freeze frame_block (all params)
+    if hasattr(model, 'aggregator') and hasattr(model.aggregator, 'frame_block'):
+        for param in model.aggregator.frame_block.parameters():
+            param.requires_grad = False
 
     for name, p in model.named_parameters():
         if not p.requires_grad:

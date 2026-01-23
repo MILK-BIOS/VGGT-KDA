@@ -6,6 +6,7 @@ __pycache__/
 *.pt
 test.py
 debug_cropped.png
+checkpoints/
 
 # C extensions
 *.so
