@@ -49,26 +49,26 @@ def convert_weight(state_dict: dict, qkv_bias: bool = False) -> dict:
         
         elif k.endswith("attn.proj.weight") and _is_global_qkv(k):
             w = out.pop(k)
-            prefix = k[: -len("attn.proj.weight")]
+            prefix = k[: -len("proj.weight")]
 
             if w.ndim != 2:
                 raise ValueError(f"Unexpected qkv.weight ndim={w.ndim} for key={k}, shape={tuple(w.shape)}")
-            out[prefix + "proj.weight"] = w
+            out[prefix + "o_proj.weight"] = w
 
         elif k.endswith("attn.proj.bias") and _is_global_qkv(k):
             b = out.pop(k)
-            prefix = k[: -len("attn.proj.bias")] 
-            out[prefix + "proj.bias"] = b
+            prefix = k[: -len("proj.bias")] 
+            out[prefix + "o_proj.bias"] = b
     return out
 
 if __name__ == "__main__":
     ckpt_teacher = torch.load('/commondocument/fhs/VideoVGGT/ckpt/model.pt', map_location='cuda')
     ckpt = torch.load('/commondocument/fhs/StreamVGGT/ckpt/streamvggt.pth', map_location='cuda')
-    # # 打印 checkpoint 的键（外层）
-    # if isinstance(ckpt_teacher, dict):
-    #     print("[teacher ckpt] top-level keys:", list(ckpt_teacher.keys()))
-    # else:
-    #     print("[teacher ckpt] type:", type(ckpt_teacher))
+    # 打印 checkpoint 的键（外层）
+    if isinstance(ckpt_teacher, dict):
+        print("[teacher ckpt] top-level keys:", list(ckpt_teacher.keys()))
+    else:
+        print("[teacher ckpt] type:", type(ckpt_teacher))
 
     teacher_sd = ckpt
     teacher_sd = convert_weight(teacher_sd)

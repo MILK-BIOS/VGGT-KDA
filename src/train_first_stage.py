@@ -134,9 +134,9 @@ def train(args):
         printer.info(f"Saving current code to {dst_dir}")
 
     # auto resume
-    if not args.resume:
-        last_ckpt_fname = os.path.join(args.output_dir, f"checkpoint-last.pth")
-        args.resume = last_ckpt_fname if os.path.isfile(last_ckpt_fname) else None
+    # if not args.resume:
+    #     last_ckpt_fname = os.path.join(args.output_dir, f"checkpoint-last.pth")
+    #     args.resume = last_ckpt_fname if os.path.isfile(last_ckpt_fname) else None
 
     printer.info("job dir: {}".format(os.path.dirname(os.path.realpath(__file__))))
 
@@ -227,6 +227,10 @@ def train(args):
         total_params += param.numel()
         param.requires_grad = True
 
+    def _freeze_module(m: torch.nn.Module):
+        for p in m.parameters():
+            p.requires_grad = False
+
     if hasattr(model, 'aggregator') and hasattr(model.aggregator, 'patch_embed'):
         for param in model.aggregator.patch_embed.parameters():
             if param.requires_grad:
@@ -239,9 +243,24 @@ def train(args):
         model.aggregator.register_token.requires_grad = False
     
     # Freeze frame_block (all params)
-    if hasattr(model, 'aggregator') and hasattr(model.aggregator, 'frame_block'):
-        for param in model.aggregator.frame_block.parameters():
+    if hasattr(model, 'aggregator') and hasattr(model.aggregator, 'frame_blocks'):
+        print("Freezing frame blocks...")
+        for param in model.aggregator.frame_blocks.parameters():
             param.requires_grad = False
+    
+    if hasattr(model, 'aggregator') and hasattr(model.aggregator, 'global_blocks'):
+        print("Freezing global blocks attention and mlp...")
+        for blk in model.aggregator.global_blocks:
+            if hasattr(blk, "attn") and hasattr(blk.attn, "o_proj"):
+                _freeze_module(blk.attn.o_proj)
+            if hasattr(blk, "attn") and hasattr(blk.attn, "k_proj"):
+                _freeze_module(blk.attn.q_proj)
+                _freeze_module(blk.attn.k_proj)
+                _freeze_module(blk.attn.v_proj)
+            if hasattr(blk, "mlp"):
+                _freeze_module(blk.mlp)
+            if hasattr(blk, "norm2"):
+                _freeze_module(blk.norm2)
 
     for name, p in model.named_parameters():
         if not p.requires_grad:
